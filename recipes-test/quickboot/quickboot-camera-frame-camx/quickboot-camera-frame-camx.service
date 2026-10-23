@@ -1,0 +1,27 @@
+# Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
+# SPDX-License-Identifier: BSD-3-Clause-Clear
+# Demo/sample systemd service for early boot camera frame collection
+# via the CAMX user-space stack (qti-cam-server + qtiqmmfsrc).
+#
+# Starts camera frame capture when cam-server is ready at boot.
+# Captures raw NV12 frames from the camera and writes them to /tmp as
+# individual .yuv files. Useful for boot time measurement, profiling,
+# and verifying camera pipeline functionality without a display sink.
+#
+# Disabled by default. Enabled only when the 'quickboot' DISTRO_FEATURE
+# is set. Used for boot time measurement and profiling.
+[Unit]
+Description=QuickBoot Early Camera Frame Collection (CAMX)
+DefaultDependencies=no
+Requires=qti-cam-server.service
+After=qti-cam-server.service
+
+[Service]
+User=root
+Type=simple
+LimitCORE=infinity
+ExecStart=/usr/bin/quickboot-camera-frame-camx
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

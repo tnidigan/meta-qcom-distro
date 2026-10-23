@@ -1,0 +1,42 @@
+#!/bin/sh
+# Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
+# SPDX-License-Identifier: BSD-3-Clause
+# QuickBoot CAMX camera frame collection reference application using GStreamer.
+# The application is a test vehicle for camera readiness measurements. It
+# captures raw frames from the CAMX pipeline via qtiqmmfsrc and writes them
+# to disk through multifilesink, retaining only the last few frames to avoid
+# filling the filesystem. It can be run directly or through its opt-in
+# systemd unit.
+
+set -eu
+
+APP_NAME="quickboot-camera-frame-camx"
+
+CAMERA_FORMAT="${CAMERA_FORMAT:-NV12}"
+CAMERA_WIDTH="${CAMERA_WIDTH:-1280}"
+CAMERA_HEIGHT="${CAMERA_HEIGHT:-720}"
+CAMERA_FRAMERATE="${CAMERA_FRAMERATE:-30/1}"
+CAMERA_CAPS="video/x-raw,format=${CAMERA_FORMAT},width=${CAMERA_WIDTH},height=${CAMERA_HEIGHT},framerate=${CAMERA_FRAMERATE}"
+
+FRAME_OUTPUT_DIR="${FRAME_OUTPUT_DIR:-/tmp}"
+FRAME_FILENAME_PATTERN="${FRAME_FILENAME_PATTERN:-frame_Test_%d.yuv}"
+FRAME_MAX_FILES="${FRAME_MAX_FILES:-10}"
+FRAME_LOCATION="${FRAME_OUTPUT_DIR}/${FRAME_FILENAME_PATTERN}"
+
+log_message() {
+    level="$1"
+    message="$2"
+    printf '[%s] %s: %s\n' "$level" "$APP_NAME" "$message"
+}
+
+log_message "INFO" "QuickBoot CAMX Camera Frame Collection Test Started"
+log_message "INFO" "Capturing with ${CAMERA_CAPS}"
+log_message "INFO" "Writing frames to ${FRAME_LOCATION} (max-files=${FRAME_MAX_FILES})"
+
+# Replace the shell process so signals from the test harness or systemd reach
+# gst-launch directly.
+exec env GST_REGISTRY_UPDATE=no gst-launch-1.0 -e \
+    qtiqmmfsrc name=camsrc video_0::type=video \
+    ! "${CAMERA_CAPS}" \
+    ! multifilesink enable-last-sample=false async=false \
+        max-files="${FRAME_MAX_FILES}" location="${FRAME_LOCATION}"
