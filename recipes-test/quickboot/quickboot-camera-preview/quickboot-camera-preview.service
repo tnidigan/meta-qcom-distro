@@ -1,0 +1,27 @@
+# Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
+# SPDX-License-Identifier: BSD-3-Clause-Clear
+# Demo/sample systemd service for early boot camera preview
+# via the CAMX user-space stack (qti-cam-server + qtiqmmfsrc).
+#
+# Starts camera preview when cam-server is ready at boot. Renders
+# directly to the Linux framebuffer, so it has no Weston dependency.
+# Measures the time for the first camera frame preview, which indicates
+# boot completion on products like Action-Camera.
+#
+# Disabled by default. Enabled only when the 'quickboot' DISTRO_FEATURE
+# is set. Used for boot time measurement and profiling.
+[Unit]
+Description=QuickBoot Early Camera Preview (CAMX)
+DefaultDependencies=no
+Requires=qti-cam-server.service
+After=qti-cam-server.service
+
+[Service]
+User=root
+Type=simple
+LimitCORE=infinity
+ExecStart=/usr/bin/quickboot-camera-preview
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
